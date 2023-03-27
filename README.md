@@ -5,7 +5,7 @@ Painkiller multiplayer powered by Unreal Engine 4
 ------------
 How to build the project:
 ---
-- Build the Unreal Editor from this [repository](https://github.com/EpicGames/UnrealEngine/tree/4.7 "repository")  
+- Build the Unreal Editor from this [repository](https://github.com/EpicGames/UnrealEngine/tree/4.7 "UnrealEngine-4.7") ([accessing UE source code](https://www.unrealengine.com/en-US/ue-on-github "Accessing Unreal Engine source code on GitHub"))  
 	**Before building UE4.sln, replace the source files of the engine with the files from this** [folder](misc/UnrealEngine-4.7 "folder")
 - Right click on PK.uproject -> Switch Unreal Engine version... -> select your Source build
 - Right click on PK.uproject -> Generate Visual Studio project files
