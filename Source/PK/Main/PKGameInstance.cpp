@@ -9,16 +9,7 @@
 #include "PKGameInstance.h"
 #include "PKGameSession.h"
 
-//#include "AllowWindowsPlatformTypes.h"
-//#include <winsock2.h>
-
-// regular
 #include "Runtime/Online/OnlineSubsystemNull/Private/OnlineSessionInterfaceNull.h"
-#include "Runtime/Sockets/Public/IPAddress.h"
-
-#include "Runtime/Sockets/Public/Sockets.h"
-#include "Runtime/Sockets/Public/SocketSubsystem.h"
-#include "Runtime/Networking/Public/Networking.h"
 
 
 UPKGameInstance::UPKGameInstance(const FObjectInitializer& ObjectInitializer)
@@ -97,17 +88,13 @@ void UPKGameInstance::Init()
 
 void UPKGameInstance::BeginLoadingScreen()
 {
-	//D("BeginLoadingScreen");
 	if (!IsRunningDedicatedServer() /*&& !WITH_EDITOR*/)
 	{	
 //#if PLATFORM_WINDOWS
 		FLoadingScreenAttributes LoadingScreen;
 		LoadingScreen.bAutoCompleteWhenLoadingCompletes = false;
-		//LoadingScreen.MinimumLoadingScreenDisplayTime = 1.0f;
 		LoadingScreen.WidgetLoadingScreen = FLoadingScreenAttributes::NewTestLoadingScreenWidget();
 		GetMoviePlayer()->SetupLoadingScreen(LoadingScreen);
-		//GetMoviePlayer()->PlayMovie();
-		// MOVIEPLAYER_API
 //#endif
 		ShowWidgetClassOf(nullptr);
 	}
@@ -132,12 +119,10 @@ void UPKGameInstance::EndLoadingScreen()
 
 bool UPKGameInstance::HostSession(TSharedPtr<const FUniqueNetId> UserId, FName SessionName, bool bIsLAN, bool bIsPresence, int32 MaxNumPlayers)
 {
-	// Get the Online Subsystem to work with
 	IOnlineSubsystem* const OnlineSub = IOnlineSubsystem::Get();
 
 	if (OnlineSub)
 	{
-		// Get the Session Interface, so we can call the "CreateSession" function on it
 		IOnlineSessionPtr Sessions = OnlineSub->GetSessionInterface();
 
 		if (Sessions.IsValid() && UserId.IsValid())
@@ -158,17 +143,12 @@ bool UPKGameInstance::HostSession(TSharedPtr<const FUniqueNetId> UserId, FName S
 			SessionSettings->Set(SETTING_MAPNAME, LevelName.ToString(), EOnlineDataAdvertisementType::ViaOnlineService);
 			SessionSettings->Set(SETTING_NUMPLAYERS, 0, EOnlineDataAdvertisementType::ViaOnlineService);
 			
-			// Set the delegate to the Handle of the SessionInterface
 			OnCreateSessionCompleteDelegateHandle = Sessions->AddOnCreateSessionCompleteDelegate_Handle(OnCreateSessionCompleteDelegate);
-
-			// Our delegate should get called when this is complete (doesn't need to be successful!)
 			return Sessions->CreateSession(*UserId, SessionName, *SessionSettings);
-			/*return Sessions->CreateSession(0, SessionName, *SessionSettings);*/
 		}
 	}
 	else
 	{
-		//GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("No OnlineSubsytem found!"));
 	}
 
 	return false;
@@ -176,12 +156,10 @@ bool UPKGameInstance::HostSession(TSharedPtr<const FUniqueNetId> UserId, FName S
 
 bool UPKGameInstance::HostSession(FName SessionName, bool bIsLAN, bool bIsPresence, int32 MaxNumPlayers)
 {
-	// Get the Online Subsystem to work with
 	IOnlineSubsystem* const OnlineSub = IOnlineSubsystem::Get();
 
 	if (OnlineSub)
 	{
-		// Get the Session Interface, so we can call the "CreateSession" function on it
 		IOnlineSessionPtr Sessions = OnlineSub->GetSessionInterface();
 
 		if (Sessions.IsValid())
@@ -202,16 +180,12 @@ bool UPKGameInstance::HostSession(FName SessionName, bool bIsLAN, bool bIsPresen
 			SessionSettings->Set(SETTING_MAPNAME, LevelName.ToString(), EOnlineDataAdvertisementType::ViaOnlineService);
 			SessionSettings->Set(SETTING_NUMPLAYERS, 0, EOnlineDataAdvertisementType::ViaOnlineService);
 
-			// Set the delegate to the Handle of the SessionInterface
 			OnCreateSessionCompleteDelegateHandle = Sessions->AddOnCreateSessionCompleteDelegate_Handle(OnCreateSessionCompleteDelegate);
-
-			// Our delegate should get called when this is complete (doesn't need to be successful!)
 			return Sessions->CreateSession(0, SessionName, *SessionSettings);
 		}
 	}
 	else
 	{
-		//GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("No OnlineSubsytem found!"));
 	}
 
 	return false;
@@ -219,23 +193,17 @@ bool UPKGameInstance::HostSession(FName SessionName, bool bIsLAN, bool bIsPresen
 
 void UPKGameInstance::OnCreateSessionComplete(FName SessionName, bool bWasSuccessful)
 {
-	// Get the OnlineSubsystem so we can get the Session Interface
 	IOnlineSubsystem* OnlineSub = IOnlineSubsystem::Get();
 	if (OnlineSub)
 	{
-		// Get the Session Interface to call the StartSession function
 		IOnlineSessionPtr Sessions = OnlineSub->GetSessionInterface();
 
 		if (Sessions.IsValid())
 		{
-			// Clear the SessionComplete delegate handle, since we finished this call
 			Sessions->ClearOnCreateSessionCompleteDelegate_Handle(OnCreateSessionCompleteDelegateHandle);
 			if (bWasSuccessful)
 			{
-				// Set the StartSession delegate handle
 				OnStartSessionCompleteDelegateHandle = Sessions->AddOnStartSessionCompleteDelegate_Handle(OnStartSessionCompleteDelegate);
-
-				// Our StartSessionComplete delegate should get called after this
 				Sessions->StartSession(SessionName);
 			}
 		}
@@ -245,30 +213,25 @@ void UPKGameInstance::OnCreateSessionComplete(FName SessionName, bool bWasSucces
 
 void UPKGameInstance::OnStartOnlineGameComplete(FName SessionName, bool bWasSuccessful)
 {
-	// Get the Online Subsystem so we can get the Session Interface
 	IOnlineSubsystem* OnlineSub = IOnlineSubsystem::Get();
 	if (OnlineSub)
 	{
-		// Get the Session Interface to clear the Delegate
 		IOnlineSessionPtr Sessions = OnlineSub->GetSessionInterface();
 		if (Sessions.IsValid())
 		{
-			// Clear the delegate, since we are done with this call
 			Sessions->ClearOnStartSessionCompleteDelegate_Handle(OnStartSessionCompleteDelegateHandle);
 		}
 	}
 
-	// If the start was successful, we can open a NewMap if we want. Make sure to use "listen" as a parameter!
 	if (bWasSuccessful)
 	{
 		if (!IsRunningDedicatedServer()){
 			GetFirstLocalPlayerController()->bShowMouseCursor = false;
 			ShowWidgetClassOf(nullptr);
-		}
-		
+		}		
 		GetWorld()->GetTimerManager().SetTimerForNextTick(OpenLevelTimerDelegate);
 	}
-
+	
 	bStartOnlineGameComplete = bWasSuccessful;
 }
 
@@ -276,12 +239,10 @@ void UPKGameInstance::OnStartOnlineGameComplete(FName SessionName, bool bWasSucc
 
 void UPKGameInstance::FindSessions(TSharedPtr<const FUniqueNetId> UserId, bool bIsLAN, bool bIsPresence)
 {
-	// Get the OnlineSubsystem we want to work with
 	IOnlineSubsystem* OnlineSub = IOnlineSubsystem::Get();
 
 	if (OnlineSub)
 	{
-		// Get the SessionInterface from our OnlineSubsystem
 		IOnlineSessionPtr Sessions = OnlineSub->GetSessionInterface();
 
 		if (Sessions.IsValid() && UserId.IsValid())
@@ -291,8 +252,7 @@ void UPKGameInstance::FindSessions(TSharedPtr<const FUniqueNetId> UserId, bool b
 			SessionSearch->bIsLanQuery = bIsLAN;
 			SessionSearch->MaxSearchResults = 20;
 			SessionSearch->PingBucketSize = 50;
-
-			// We only want to set this Query Setting if "bIsPresence" is true
+			
 			if (bIsPresence)
 			{
 				SessionSearch->QuerySettings.Set(SEARCH_PRESENCE, bIsPresence, EOnlineComparisonOp::Equals);
@@ -300,32 +260,26 @@ void UPKGameInstance::FindSessions(TSharedPtr<const FUniqueNetId> UserId, bool b
 
 			TSharedRef<FOnlineSessionSearch> SearchSettingsRef = SessionSearch.ToSharedRef();
 
-			// Set the Delegate to the Delegate Handle of the FindSession function
 			OnFindSessionsCompleteDelegateHandle = Sessions->AddOnFindSessionsCompleteDelegate_Handle(OnFindSessionsCompleteDelegate);
 			bOnFindSessionsCompleteDelegateHandle = true;
-			// Finally call the SessionInterface function. The Delegate gets called once this is finished
 			Sessions->FindSessions(*UserId, SearchSettingsRef);
 		}
 	}
 	else
 	{
-		// If something goes wrong, just call the Delegate Function directly with "false".
 		OnFindSessionsComplete(false);
 	}
 }
 
 void UPKGameInstance::OnFindSessionsComplete(bool bWasSuccessful)
 {
-	// Get OnlineSubsystem we want to work with
 	IOnlineSubsystem* const OnlineSub = IOnlineSubsystem::Get();
 	if (OnlineSub)
 	{
 		SearchResultsArr.Empty();
-		// Get SessionInterface of the OnlineSubsystem
 		IOnlineSessionPtr Sessions = OnlineSub->GetSessionInterface();
 		if (Sessions.IsValid())
 		{
-			// Clear the Delegate handle, since we finished this call
 			Sessions->ClearOnFindSessionsCompleteDelegate_Handle(OnFindSessionsCompleteDelegateHandle);
 			bOnFindSessionsCompleteDelegateHandle = false;
 
@@ -366,7 +320,6 @@ void UPKGameInstance::OnFindSessionsComplete(bool bWasSuccessful)
 				}
 				UpdateJoinGameMenuWidget(1); return;
 			}
-			/*OnSearchResultsCompleted();*/
 		}
 	}
 	UpdateJoinGameMenuWidget(0);
@@ -376,26 +329,20 @@ void UPKGameInstance::OnFindSessionsComplete(bool bWasSuccessful)
 
 bool UPKGameInstance::JoinSession(ULocalPlayer* LocalPlayer, /*FName SessionName,*/ const FOnlineSessionSearchResult& SearchResult)
 {
-	// Return bool
 	bool bSuccessful = false;
 
-	// Get OnlineSubsystem we want to work with
 	IOnlineSubsystem* OnlineSub = IOnlineSubsystem::Get();
 
 	TSharedPtr<const FUniqueNetId> UserId = LocalPlayer->GetPreferredUniqueNetId();
 
 	if (OnlineSub)
 	{
-		// Get SessionInterface from the OnlineSubsystem
 		IOnlineSessionPtr Sessions = OnlineSub->GetSessionInterface();
 
 		if (Sessions.IsValid() && UserId.IsValid())
 		{
-			// Set the Handle again
 			OnJoinSessionCompleteDelegateHandle = Sessions->AddOnJoinSessionCompleteDelegate_Handle(OnJoinSessionCompleteDelegate);
 
-			// Call the "JoinSession" Function with the passed "SearchResult". The "SessionSearch->SearchResults" can be used to get such a
-			// "FOnlineSessionSearchResult" and pass it. Pretty straight forward!
 			bSuccessful = Sessions->JoinSession(*UserId, GameSessionName, SearchResult);
 		}
 	}
@@ -433,25 +380,17 @@ void UPKGameInstance::OnJoinSessionComplete(FName SessionName, EOnJoinSessionCom
 		return;
 	}
 
-	// Get the OnlineSubsystem we want to work with
 	IOnlineSubsystem* OnlineSub = IOnlineSubsystem::Get();
 	if (OnlineSub)
 	{
-		// Get SessionInterface from the OnlineSubsystem
 		IOnlineSessionPtr Sessions = OnlineSub->GetSessionInterface();
 
 		if (Sessions.IsValid())
 		{
-			// Clear the Delegate again
 			Sessions->ClearOnJoinSessionCompleteDelegate_Handle(OnJoinSessionCompleteDelegateHandle);
 
-			// Get the first local PlayerController, so we can call "ClientTravel" to get to the Server Map
-			// This is something the Blueprint Node "Join Session" does automatically!
 			APlayerController * const PlayerController = GetFirstLocalPlayerController();
 
-			// We need a FString to use ClientTravel and we can let the SessionInterface contruct such a
-			// String for us by giving him the SessionName and an empty String. We want to do this, because
-			// Every OnlineSubsystem uses different TravelURLs
 			FString TravelURL;
 			
 			if (PlayerController && Sessions->GetResolvedConnectString(SessionName, TravelURL))
@@ -475,18 +414,14 @@ void UPKGameInstance::ClientTravel()
 
 void UPKGameInstance::OnDestroySessionComplete(FName SessionName, bool bWasSuccessful)
 {
-	// Get the OnlineSubsystem we want to work with
 	IOnlineSubsystem* OnlineSub = IOnlineSubsystem::Get();
 	if (OnlineSub)
 	{
-		// Get the SessionInterface from the OnlineSubsystem
 		IOnlineSessionPtr Sessions = OnlineSub->GetSessionInterface();
 
 		if (Sessions.IsValid())
 		{
-			// Clear the Delegate
 			Sessions->ClearOnDestroySessionCompleteDelegate_Handle(OnDestroySessionCompleteDelegateHandle);
-			// If it was successful, we just load another level (could be a MainMenu!)
 			if (bWasSuccessful)
 			{
 				bStartOnlineGameComplete = false;
@@ -563,10 +498,7 @@ void UPKGameInstance::StartOnlineGame(TEnumAsByte<EMyEnum>& Branches)
 	if (!GEngine->MakeSureMapNameIsValid(MapName)) return;
 
 	if (!IsRunningDedicatedServer()){
-		// Creating a local player where we can get the UserID from
 		ULocalPlayer* const Player = GetFirstGamePlayer();
-
-		// Call our custom HostSession function. GameSessionName is an 'OnlineSessionInterface' const ("Game")
 		HostSession(Player->GetPreferredUniqueNetId(), GameSessionName, true, true, 16);
 	}
 	else{
@@ -780,7 +712,7 @@ void UPKGameInstance::ServerTravel(FString NewMapName)
 	// Destroying all the pawns before traveling.
 	// NOTE:
 	// After the current pawn is destroyed, PlayerController can respawn a new one only in the next frame.
-	// This avoids spawning since the match will end by this point.
+	// This avoids spawning since the match will end at this point.
 	TArray<APlayerState*> PlayerArray = World->GameState->PlayerArray;
 	for (int i = 0; i < PlayerArray.Num(); i++){
 		APlayerController* PC = Cast<APlayerController>(PlayerArray[i]->GetNetOwningPlayer()->PlayerController);

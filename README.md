@@ -14,7 +14,8 @@ How to build the project:
 ------------
 Packaged version (401 MB)
 ---
-[WindowsNoEditor_a1.23.7z](https://github.com/max-ego/PK/releases/download/a1.23/WindowsNoEditor_a1.23.7z "WindowsNoEditor_a1.23.7z") (26 March 23)
+[WindowsNoEditor_a1.23.7z](https://github.com/max-ego/PK/releases/download/a1.23/WindowsNoEditor_a1.23.7z "WindowsNoEditor_a1.23.7z") (26 March 2023)
+
+[![youtube](misc/mq2.webp "youtube")](https://youtu.be/xCp7tg72glU "youtube")
 
 ------------
-[![youtube](misc/mq2.webp "youtube")](https://youtu.be/xCp7tg72glU "youtube")
