@@ -147,9 +147,6 @@ bool UPKGameInstance::HostSession(TSharedPtr<const FUniqueNetId> UserId, FName S
 			return Sessions->CreateSession(*UserId, SessionName, *SessionSettings);
 		}
 	}
-	else
-	{
-	}
 
 	return false;
 }
@@ -183,9 +180,6 @@ bool UPKGameInstance::HostSession(FName SessionName, bool bIsLAN, bool bIsPresen
 			OnCreateSessionCompleteDelegateHandle = Sessions->AddOnCreateSessionCompleteDelegate_Handle(OnCreateSessionCompleteDelegate);
 			return Sessions->CreateSession(0, SessionName, *SessionSettings);
 		}
-	}
-	else
-	{
 	}
 
 	return false;
