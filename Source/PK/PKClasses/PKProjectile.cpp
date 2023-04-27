@@ -18,8 +18,7 @@ APKProjectile::APKProjectile(const FObjectInitializer& ObjectInitializer)
 	bReplicates = true;
 	bReplicateMovement = false; // for rectilinearly moving projectiles should be 'false'
 
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+ 	PrimaryActorTick.bCanEverTick = true;
 
 	// Use a sphere as a simple collision representation
 	CollisionComp = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComp"));
@@ -70,6 +69,7 @@ APKProjectile::APKProjectile(const FObjectInitializer& ObjectInitializer)
 void APKProjectile::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
+	
 }
 
 // Called when the game starts or when spawned
@@ -193,7 +193,7 @@ void APKProjectile::OnBeginOverlap(AActor* OtherActor, UPrimitiveComponent* Othe
 
 void APKProjectile::SetDeactivateTimer(float TimeToLive)
 {
-	if ((HasAuthority() /*|| bTearOff*/) && !IsPendingKill())
+	if ((HasAuthority()) && !IsPendingKill())
 	{
 		// Reload PainHead if destroyed by the KillZ
 		if (bPainHead) OnDestroyed.AddUnique(OnProjectileDestoyedDelegate);

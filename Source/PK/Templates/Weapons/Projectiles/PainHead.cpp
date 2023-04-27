@@ -43,6 +43,7 @@ APainHead::APainHead(const FObjectInitializer& ObjectInitializer)
 	ElectroShockLoop = ElectroShockLoopSndCue.Object;
 	static ConstructorHelpers::FObjectFinder<USoundCue>ElectroLoopSndCue(TEXT("SoundCue'/Game/Sounds/weapons/painkiller/Cue/ElectroLoop.ElectroLoop'"));
 	ElectroLoop = ElectroLoopSndCue.Object;
+	ElectroLoopAudioComp->SetSound(ElectroLoop);
 
 	PainkillerShoot = UTIL.GetSound("weapons/painkiller", "painkiller-shoot");
 	static ConstructorHelpers::FObjectFinder<UObject>PHBack(TEXT("SoundCue'/Game/Sounds/weapons/painkiller/Cue/PHBack.PHBack'"));
@@ -87,15 +88,29 @@ void APainHead::BeginPlay()
 		if (Mesh) {
 			HeadBeamComp->AttachTo(Mesh, AttachPointName, EAttachLocation::SnapToTarget, true);
 			HeadBeamComp->Activate();
-			UTIL.PlaySnd(ElectroLoopAudioComp, ElectroLoop);
 		}
 		
 		if (b3rdPerson)
 		{
 			OnRep_BeamToggle();
 			UGameplayStatics::PlaySoundAttached(PainkillerShoot, Owner->GetRootComponent());
-		}		
+		}
 	}
+}
+
+void APainHead::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+
+	if (bHideBeam)
+		ElectroLoopAudioComp->Stop();
+	else
+		ElectroLoopAudioComp->Play();
+	
+	if (bShock)
+		ElectroLoopAudioComp->SetSound(ElectroShockLoop);
+	else
+		ElectroLoopAudioComp->SetSound(ElectroLoop);
 }
 
 // Called every frame
@@ -118,6 +133,7 @@ void APainHead::OnHit(AActor* OtherActor, UPrimitiveComponent* OtherComp, FVecto
 void APainHead::OnBeginOverlap(AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool fromSweep, const FHitResult& Hit)
 {
 	Super::OnBeginOverlap(OtherActor, OtherComp, OtherBodyIndex, fromSweep, Hit);
+
 }
 
 void APainHead::HookUpEnemy(AActor* OtherActor)
@@ -134,8 +150,7 @@ void APainHead::HookUpEnemy(AActor* OtherActor)
 
 void APainHead::BeamIntersection(float DeltaTime)
 {
-	if (!(/*HasAuthority() &&*/
-		HeadBeamComp != nullptr &&
+	if (!(HeadBeamComp != nullptr &&
 		HeadBeamComp->IsValidLowLevel() &&
 		!HeadBeamComp->IsPendingKill())
 		) return;
@@ -145,7 +160,7 @@ void APainHead::BeamIntersection(float DeltaTime)
 		if (HasAuthority() && IsValidLowLevel() && !IsPendingKill()) Destroy();
 		return;
 	}
-	
+
 	FVector HitLine = (GetActorLocation() - HeadBeamComp->GetComponentLocation()).GetSafeNormal();
 	FVector SightLine = Owner->GetBaseAimRotation().RotateVector(FVector::ForwardVector);
 	float d = FMath::PointDistToLine(GetActorLocation(), SightLine, HeadBeamComp->GetComponentLocation());
@@ -158,73 +173,80 @@ void APainHead::BeamIntersection(float DeltaTime)
 	}
 
 	FHitResult Hit = FHitResult(1.f);
-	FCollisionQueryParams TraceParams = FCollisionQueryParams(FName(TEXT("Trace")), true, Owner);
-	TraceParams.AddIgnoredActor(this);
+	TArray<FHitResult, FDefaultAllocator> OutHits;
 	const FVector End = GetActorLocation();
 
-	GetWorld()->LineTraceSingle(Hit, HeadBeamComp->GetComponentLocation(), End, ECollisionChannel::ECC_Visibility, TraceParams);
+	FCollisionObjectQueryParams ObjectParams;
+	ObjectParams.AddObjectTypesToQuery(ECollisionChannel::ECC_WorldStatic);
+	ObjectParams.AddObjectTypesToQuery(ECollisionChannel::ECC_PhysicsBody);
 
-	if (Hit.bBlockingHit)
+	static const FName LineTraceMultiName(TEXT("LineTraceMulti"));
+	FCollisionQueryParams Params = FCollisionQueryParams(LineTraceMultiName, true, Owner);
+	//Params.bReturnPhysicalMaterial = true;
+	//Params.bTraceAsyncScene = true;
+	Params.AddIgnoredActor(this);
+	bool bHit = GetWorld()->LineTraceMulti(OutHits, HeadBeamComp->GetComponentLocation(), End, Params, ObjectParams);	
+	
+	bool bShowBeam = true;
+	if (bHit)
 	{
-		if (HasAuthority())
+		for (auto OutHit : OutHits)
 		{
-			if (Hit.GetActor()->IsA(ANetPlayer::StaticClass()) ||
-				Hit.GetActor()->IsA(ADestructibleItemBase::StaticClass()))
+			if (OutHit.GetActor()->IsA(AStaticMeshActor::StaticClass()))
+			{
+				bShowBeam = false; break;
+			}
+			else if (bHit &&
+				(OutHit.GetComponent()->IsA(UStaticMeshComponent::StaticClass())
+				|| OutHit.GetComponent()->IsA(USkeletalMeshComponent::StaticClass())
+				&& !OutHit.GetComponent()->IsAnySimulatingPhysics())
+				)
+			{
+				Hit = OutHit; bHit = false; // take the first hit
+			}
+		}
+		if (bShowBeam)
+		{
+			if (Hit.bBlockingHit)
 			{
 				if (Enemy != Hit.GetActor())
 				{
 					ApplyRemainingDamage();
-
-					Enemy = Hit.GetActor(); if (PC && Hit.GetActor()->IsA(ANetPlayer::StaticClass())) PC->bSpecificHitSound = true;
+					Enemy = Hit.GetActor();
+					if (HasAuthority() && PC && Hit.GetActor()->IsA(ANetPlayer::StaticClass()))
+						PC->bSpecificHitSound = true;
 					bHitEnemy = true;
 				}
 			}
-			else
-			{
-				if (!Hit.GetActor()->IsA(AStaticMeshActor::StaticClass())) bHitEnemy = true;
-
-				ApplyRemainingDamage();
-				Owner->ClearMinigunLastHitEnemy();
-			}
+			else ApplyRemainingDamage();
 		}
+		else ApplyRemainingDamage();
+	}
+	else ApplyRemainingDamage();
+	
+	BeamShockSnd(bHitEnemy);
+	HideBeam(!bShowBeam);
 
+	if (ParticleTimeout <= 0)
+	{
 		if (bHitEnemy)
 		{
-			BeamShockSnd(true);
-			HideBeam(false);
+			// TODO: hit enemy particle and sound
+			UGameplayStatics::SpawnEmitterAttached(
+				HitEnemyParticle,
+				GetRootComponent(),
+				NAME_None,
+				Hit.ImpactPoint,
+				Hit.ImpactNormal.Rotation(),
+				EAttachLocation::KeepWorldPosition,
+				true
+				);
 		}
-		else{
-			BeamShockSnd(false);
-			HideBeam(true);
-		}
+		else
+		{
 
-		if (ParticleTimeout <= 0){
-			if (bHitEnemy)
-			{
-				// TODO: hit enemy particle and sound
-				
-				UGameplayStatics::SpawnEmitterAttached(
-					HitEnemyParticle,
-					GetRootComponent(),
-					NAME_None,
-					Hit.ImpactPoint,
-					Hit.ImpactNormal.Rotation(),
-					EAttachLocation::KeepWorldPosition,
-					true
-					);
-			}
-			else
-			{
-				
-			}
-			ParticleTimeout = 0.10f;
 		}
-	}
-	else
-	{
-		ApplyRemainingDamage();
-		BeamShockSnd(false);
-		HideBeam(false);
+		ParticleTimeout = 0.10f;
 	}
 }
 

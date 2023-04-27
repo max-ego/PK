@@ -37,7 +37,14 @@ void APKGameState::DefaultTimer()
 				Cast<UPKGameInstance>(World->GetGameInstance())->LoadNextMap();
 			}
 		}
+
+		if (FMath::Fmod(ElapsedTime, 60) == 0) SyncElapsedTime = ElapsedTime;
 	}
+}
+
+void APKGameState::OnRep_SyncElapsedTime()
+{
+	ElapsedTime = SyncElapsedTime;
 }
 
 void APKGameState::EndOfMatchCountdown()
@@ -158,6 +165,7 @@ void APKGameState::UpdateMatchTimeLimit()
 	URL.LoadURLConfig(TEXT("MatchTimeLimit"), GGameIni);
 	const TCHAR* c = URL.GetOption(TEXT("Time="), TEXT("20")); // 20 minutes by default
 	FDefaultValueHelper::ParseInt(c, TimeLimit); TimeLimit *= 60;
+	/*TimeLimit = (int32)(60 * _wtoi(c));*/
 }
 
 void APKGameState::SayToAllWhoseFrag(const class UDamageType* DamageType, class AController* PC, class AController* InstigatedBy, AActor* DamageCauser)
@@ -328,4 +336,5 @@ void APKGameState::GetLifetimeReplicatedProps(TArray< FLifetimeProperty > & OutL
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(APKGameState, TimeLimit);
+	DOREPLIFETIME(APKGameState, SyncElapsedTime);
 }

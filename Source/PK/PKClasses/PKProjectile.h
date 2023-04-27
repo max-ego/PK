@@ -152,6 +152,7 @@ public:
 		if (HasAuthority()){
 			GetWorldTimerManager().ClearTimer(TimerHandle_GetPainHeadBack);
 			bPainHeadWithdraw = true;
+			ApplyRemainingDamage();
 			OnRep_PainHeadWithdraw(); // localy on server
 		}
 	};

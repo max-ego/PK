@@ -36,11 +36,8 @@ public:
 	void DeactivateQuiet();
 	virtual void DeactivateQuiet_Implementation();
 
-	/*void GetLifetimeReplicatedProps(TArray<FLifetimeProperty> & OutLifetimeProps) const override;*/
-
 protected:
 
-	int32 MaxBounces = 5;
 	float BounceSoundTimeOut = -1;
 	bool IsSpawnedBehindWall();
 };

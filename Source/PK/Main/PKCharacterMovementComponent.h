@@ -20,6 +20,7 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay, meta = (ClampMin = "0", UIMin = "0"))
 	float BaseWalkSpeed = 924.f; // 924.f (11 * 84)
+	//float BaseWalkSpeed = 2352.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay, meta = (ClampMin = "0", UIMin = "0"))
 	float MaxBunnyHopVelocity = 2100.f; // 2100.f (26 * 84)
@@ -60,7 +61,7 @@ public:
 	virtual float GetMaxSpeed() const override;
 
 	virtual bool StepUp(const FVector& GravDir, const FVector& Delta, const FHitResult &Hit, struct UCharacterMovementComponent::FStepDownResult* OutStepDownResult = NULL) override;
-	
+
 	/** Called if bNotifyApex is true and character has just passed the apex of its jump. */
 	virtual void NotifyJumpApex() override;
 	
@@ -75,7 +76,7 @@ public:
 	
 	void ScheduleRocketJump(TSubclassOf<class APKProjectile>  ProjectileCls);
 	UFUNCTION() // Delegate bind
-	void ApplyRocketJump();
+	void ApplyRocketJump(FHitResult RocketHit, FHitResult WallHit, FVector Rebound);
 	FORCEINLINE void ReceiveImpact(FVector Impulse)
 	{
 		ReceivedImpulse += Impulse;
@@ -130,12 +131,8 @@ protected:
 	virtual void HandleImpact(FHitResult const& Hit, float TimeSlice = 0.f, const FVector& MoveDelta = FVector::ZeroVector) override;
 
 	virtual void FindFloor(const FVector& CapsuleLocation, struct FFindFloorResult& OutFloorResult, bool bZeroDelta, const FHitResult* DownwardSweepResult = NULL) const override;
-	
-	/** If bUpdatePosition is true, then replay any unacked moves. Returns whether any moves were actually replayed. */
-	/*virtual bool ClientUpdatePositionAfterServerUpdate() override;*/
 		
 	FTimerHandle TimerHandle;
-	FHitResult RocketHit;
 	FTimerDelegate RocketJumpTimerDelegate;
 			
 	float PendingForward = 0.f;

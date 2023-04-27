@@ -27,6 +27,12 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Game")
 	FDefaultTimerSignature OnDefaultTimer;
 
+	/** used to synchronize elapsed time on the client */
+	UPROPERTY(ReplicatedUsing = OnRep_SyncElapsedTime)
+	int32 SyncElapsedTime;
+	UFUNCTION()
+	void OnRep_SyncElapsedTime();
+
 	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty> & OutLifetimeProps) const override;
 
 	TArray<APlayerState*> GetPlayerStatesSortedById();

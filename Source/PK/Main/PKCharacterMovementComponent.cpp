@@ -73,9 +73,6 @@ UPKCharacterMovementComponent::UPKCharacterMovementComponent(const FObjectInitia
 	FallingLateralFriction = BaseFallingLateralFriction;
 
 	RocketJumpTimerDelegate.BindUFunction(this, FName("ApplyRocketJump"));
-
-	// note: 'Check we are still in the world' issue
-	/*bCheatFlying = true;*/
 }
 
 //OVERRIDDEN FUNCs
@@ -145,7 +142,6 @@ void FPKSavedMove_Character::SetMoveFor(ACharacter* Character, float InDeltaTime
 
 bool FPKSavedMove_Character::IsImportantMove(const FSavedMovePtr& LastAckedMove) const
 {	
-	// client 'Fatal error! issue
 	FPKSavedMove_Character* LAM = const_cast<FPKSavedMove_Character*>((FPKSavedMove_Character*)&LastAckedMove);
 	/*const FPKSavedMove_Character* LAM = (FPKSavedMove_Character*)&LastAckedMove;*/
 	
@@ -366,12 +362,12 @@ bool UPKCharacterMovementComponent::StepUp(const FVector& InGravDir, const FVect
 	{
 		// See if this step sequence would have allowed us to travel higher than our max step height allows.
 		const float DeltaZ = Hit.ImpactPoint.Z - PawnFloorPointZ;
-		if (DeltaZ > MaxStepHeight || ((bSpeedBit10 || bSpeedBit01) && DeltaZ > MaxStepHeight))
+		if (DeltaZ > MaxStepHeight)
 		{
-			ScopedStepUpMovement.RevertMove(); // Revert anyway, whether true or false is returned.						
-			if (DeltaZ < JumpOverHeight && IsWalkable(Hit) && !Acceleration.IsZero() && !bSlideAlongSlope){
+			ScopedStepUpMovement.RevertMove(); // Revert anyway, whether true or false is returned.
+			if (DeltaZ < JumpOverHeight && IsWalkable(Hit) && !Acceleration.IsZero() && !bSlideAlongSlope && (bSpeedBit10 || bSpeedBit01)){
 				Velocity = FVector::ZeroVector;
-				Velocity.Z = FMath::Sqrt(-GetGravityZ() * DeltaZ) * (1.75f + (bSpeedBit10 << 1 | bSpeedBit01 << 0)*0.667f);
+				Velocity.Z = FMath::Sqrt(-GetGravityZ() * DeltaZ * 2.f) * (1.f + (bSpeedBit10 << 1 | bSpeedBit01 << 0) * 0.33f);
 				if (CharacterOwner->IsLocallyControlled())
 				{
 					// reduce speed
@@ -465,8 +461,6 @@ bool UPKCharacterMovementComponent::StepUp(const FVector& InGravDir, const FVect
 // set the step height down to 0.5 of the step height up
 void UPKCharacterMovementComponent::FindFloor(const FVector& CapsuleLocation, FFindFloorResult& OutFloorResult, bool bZeroDelta, const FHitResult* DownwardSweepResult) const
 {
-	/*Super::FindFloor(CapsuleLocation, OutFloorResult, bZeroDelta, DownwardSweepResult); return;*/
-
 	// No collision, no floor...
 	if (!UpdatedComponent->IsCollisionEnabled())
 	{
@@ -680,7 +674,7 @@ void UPKCharacterMovementComponent::PhysWalking(float deltaTime, int32 Iteration
 			if ((CurrentFloor.HitResult.ImpactNormal | Acceleration.GetSafeNormal2D()) > -0.7071 &&
 				(OldFloor.HitResult.ImpactNormal | CurrentFloor.HitResult.ImpactNormal) < 0.98)
 			{
-				Velocity = 1/1.12 * (CharacterOwner->GetActorLocation() - OldLocation) / timeTick;
+				Velocity = 1/1.5 * (CharacterOwner->GetActorLocation() - OldLocation) / timeTick;
 				if (CharacterOwner->IsLocallyControlled())
 				{
 					// reduce speed
@@ -821,6 +815,8 @@ void UPKCharacterMovementComponent::HandleImpact(FHitResult const& Hit, float Ti
 			ClimbOn(Hit, MoveDelta);
 		}
 	}
+
+	if ((Velocity.GetSafeNormal2D() | Hit.ImpactNormal) < -0.98f) SetMovementFlags(0, 0, 0, bWantsToStop);
 }
 
 void UPKCharacterMovementComponent::ClimbOn(FHitResult const& InHit, const FVector& Delta)
@@ -935,7 +931,7 @@ float UPKCharacterMovementComponent::GetMaxSpeed() const
 void UPKCharacterMovementComponent::PhysFalling(float deltaTime, int32 Iterations)
 {
 	FallingLateralFriction = bWantsToStop ? MaxFallingLateralFriction : BaseFallingLateralFriction;
-	Super::PhysFalling(deltaTime, Iterations); // WalkableFloorZ -> GetWalkableFloorZ()
+	Super::PhysFalling(deltaTime, Iterations);
 }
 
 void UPKCharacterMovementComponent::PhysFlying(float deltaTime, int32 Iterations)
@@ -947,7 +943,7 @@ void UPKCharacterMovementComponent::PhysFlying(float deltaTime, int32 Iterations
 
 	if (!HasRootMotion())
 	{
-		if (/*bCheatFlying &&*/ Acceleration.IsZero())
+		if (Acceleration.IsZero())
 		{
 			Velocity = FVector::ZeroVector;
 		}
@@ -997,24 +993,24 @@ void UPKCharacterMovementComponent::PhysFlying(float deltaTime, int32 Iterations
 void UPKCharacterMovementComponent::StartFalling(int32 Iterations, float remainingTime, float timeTick, const FVector& Delta, const FVector& subLoc)
 {
 	Super::StartFalling(Iterations, remainingTime, timeTick, Delta, subLoc);
-	
 }
 
+FVector LastVel2D = FVector::ZeroVector;
 bool UPKCharacterMovementComponent::DoJump(bool bReplayingMoves)
 {
-	/*return Super::DoJump(bReplayingMoves);*/
-
 	if (Super::DoJump(bReplayingMoves))
 	{	
 		if (CharacterOwner->IsLocallyControlled()){
 			if (!bWantsToStop) {
-				TimeOutAfterLanding = SecondsWhenYouCanBunnyHopAfterLanding;
+				TimeOutAfterLanding = SecondsWhenYouCanBunnyHopAfterLanding;				
 				if (!(bSpeedBit10 && bSpeedBit01))
 				{
+					if (Velocity.Size2D() < BaseWalkSpeed / 2) BunnyHopCount = 0;
+
 					bSpeedBit01 = (0x01 & BunnyHopCount) != 0;
 					bSpeedBit10 = (0x02 & BunnyHopCount) != 0;
 					
-					BunnyHopCount = 0x03 & (bSpeedBit10 << 1 | bSpeedBit01 << 0) + 1;
+					BunnyHopCount = 0x03 & (bSpeedBit10 << 1 | bSpeedBit01 << 0) + 1;					
 				}
 			}
 			bNotifyApex = true;
@@ -1034,18 +1030,20 @@ void UPKCharacterMovementComponent::CalcVelocity(float DeltaTime, float Friction
 	Super::CalcVelocity(DeltaTime, Friction, bFluid, BrakingDeceleration);
 	
 	// Slide down the slope
-	if (/*MovementMode == MOVE_Walking &&*/ CurrentFloor.bBlockingHit)
+	if (CurrentFloor.bBlockingHit)
 	{
 		const FVector SlideDir = CurrentFloor.HitResult.ImpactNormal.GetSafeNormal2D();
 		FVector RampVector = ComputeGroundMovementDelta(SlideDir, CurrentFloor.HitResult, CurrentFloor.bLineTrace);
 		float Dot = RampVector | FVector(0, 0, -1);
-		Velocity += SlideDir * Dot * -GetGravityZ() * 1.5 * DeltaTime;
+		FVector SlideVel = SlideDir * Dot * -GetGravityZ() * 1.5 * DeltaTime;
 
-		bSlideAlongSlope = FVector::Coincident(Velocity.GetSafeNormal2D(), SlideDir) && Acceleration.IsZero();
+		bSlideAlongSlope = FVector::Coincident(SlideVel.GetSafeNormal2D(), SlideDir) && Acceleration.IsZero();
+		if (bSlideAlongSlope) Velocity += SlideVel;
 	}
 }
 
 //NEW FUNCs
+
 void UPKCharacterMovementComponent::MovementControl(float DeltaTime)
 {
 	if (!(CharacterOwner && CharacterOwner->IsLocallyControlled())) return;
@@ -1058,24 +1056,24 @@ void UPKCharacterMovementComponent::MovementControl(float DeltaTime)
 	if (bWantsToStop && !IsFlying()){ FWD = FVector::ZeroVector; RGT = FVector::ZeroVector; }
 
 	// check if we should start braking while bunnyhopping
-	if ((Velocity.GetSafeNormal2D() | InputVector) < -0.7071f) bWantsToStop = true;
+	if (!bSlideAlongSlope && (Velocity.GetSafeNormal2D() | InputVector) < -0.7071f) SetMovementFlags(0, 0, 0, 1);
 	
-	if (IsWalking()){
+	if (IsWalking()) {
 		bJumpApex = false;
 		PendingForward = 0.f; PendingRight = 0.f;
 
 		// update bWantsToStop when dodging
-		bWantsToStop = (Velocity.GetSafeNormal2D() | InputVector) < -0.7071f; // FMath::Cos(135.f * PI / 180.f);
+		bWantsToStop = !bSlideAlongSlope && (Velocity.GetSafeNormal2D() | InputVector) < -0.7071f; // FMath::Cos(135.f * PI / 180.f);
 
-		if (Velocity.Size2D() < KINDA_SMALL_NUMBER/*Acceleration.IsZero()*/ || TimeOutAfterLanding <= 0){
-			SetMovementFlags(0,0,0,0);
+		if (Velocity.Size2D() < KINDA_SMALL_NUMBER/*Acceleration.IsZero()*/ || TimeOutAfterLanding <= 0)
+		{
+			SetMovementFlags(0, 0, 0, 0);
 		}
 		if (TimeOutAfterLanding > 0) TimeOutAfterLanding -= DeltaTime;
 	}
-	
 	// apply input
 	if (bWantsToStop && !IsFlying()){ FWD = FVector::ZeroVector; RGT = FVector::ZeroVector; }
-	ReceiveMinigunHit(/*FWD, RGT*/DeltaTime);
+	ReceiveMinigunHit(DeltaTime);
 	
 	if (IsFlying()){
 		FRotator SpawnRotation = CharacterOwner->GetControlRotation();
@@ -1121,7 +1119,7 @@ void UPKCharacterMovementComponent::SetDirection(float &Forth, float &Across, fl
 	if (Value != 0.f)
 	{
 		if (IsFalling()) {
-			if (Forth == 0.f && Across == 0.f) return; // rare case of hitting a wall when falling
+			if (Forth == 0.f && Across == 0.f) return;
 			if (Forth == -Value) bWantsToStop = true;
 			if (Across == 0.f || (Forth != 0.f && Across != 0.f)) Forth = Value;
 		}
@@ -1144,24 +1142,43 @@ void UPKCharacterMovementComponent::ScheduleRocketJump(TSubclassOf<class APKProj
 
 	const FVector End = SpawnLocation + ExplosionRange * 1.5f * SpawnRotation.RotateVector(FVector::ForwardVector);
 
-	RocketHit = FHitResult(1.f);
+	FHitResult RocketHit = FHitResult(1.f);
 	FCollisionQueryParams TraceParams = FCollisionQueryParams(FName(TEXT("Trace")), true, PLAYER);
 
 	GetWorld()->SweepSingleByProfile(RocketHit, SpawnLocation, End, FQuat(), TEXT("Spectator"), FCollisionShape::MakeSphere(10.f), TraceParams);
 	
+	// check if we are facing the wall
+	FHitResult WallHit = FHitResult(1.f);
+	FVector Rebound = SpawnRotation.RotateVector(FVector::ForwardVector);
+	const FVector TraceStart = UpdatedComponent->GetComponentLocation();
+	const FVector TraceEnd = TraceStart + (CharacterOwner->GetActorForwardVector() * ExplosionRange * (CharacterOwner->GetActorForwardVector() | Rebound));
+	GetWorld()->LineTraceSingleByProfile(WallHit, TraceStart, TraceEnd, TEXT("Spectator"), TraceParams);
+	
 	if (RocketHit.bBlockingHit){
 		float ProjectileSpeed = ProjectileCls.GetDefaultObject()->GetProjectileMovement()->MaxSpeed;
 		float RocketJumpDelay = (RocketHit.ImpactPoint - UpdatedComponent->GetComponentLocation()).Size() / ProjectileSpeed;
+
+		RocketJumpTimerDelegate.BindUFunction(this, FName("ApplyRocketJump"), RocketHit, WallHit, -Rebound);
 		GetWorld()->GetTimerManager().SetTimer(TimerHandle, RocketJumpTimerDelegate, RocketJumpDelay, false);
 	}
 }
 
-void UPKCharacterMovementComponent::ApplyRocketJump()
+void UPKCharacterMovementComponent::ApplyRocketJump(FHitResult RocketHit, FHitResult WallHit, FVector Rebound)
 {
 	FVector RocketJumpImpulse = ARocket::GetExplosionVelocity(RocketHit.ImpactPoint, this);
-	if (!RocketJumpImpulse.IsNearlyZero()){
+
+	if (!RocketJumpImpulse.IsNearlyZero()) {
+		if (WallHit.bBlockingHit && (FMath::Abs(RocketHit.ImpactNormal.Z) < 0.26f)) // Z <~ ±15 degrees
+		{
+			if (bMoveInput) SetMovementFlags(1, 1, 1, 0);
+			else SetMovementFlags(0, 1, 0, 0);
+			RocketJumpImpulse = Rebound * GetMaxSpeed() * (1 - (WallHit.ImpactPoint - UpdatedComponent->GetComponentLocation()).Size() / (WallHit.TraceStart - WallHit.TraceEnd).Size());
+		}
+		else if ((CharacterOwner->GetActorForwardVector().GetSafeNormal2D() | RocketJumpImpulse.GetSafeNormal2D()) > -0.7071f)
+		{
+			SetMovementFlags(bSpeedBit10, bSpeedBit01, bSpeedBit10 || bSpeedBit01, 0);
+		}
 		ReceiveImpact(RocketJumpImpulse);
-		bRocketJump = bSpeedBit10 || bSpeedBit01;
 	}
 }
 
@@ -1179,7 +1196,7 @@ FVector UPKCharacterMovementComponent::GetAverageHitDirection(uint16 AttackingEn
 		if (Pawn) Average += Pawn->GetBaseAimRotation().RotateVector(FVector::ForwardVector);
 	}
 	
-	return Average/*.GetSafeNormal()*/;
+	return Average;
 }
 
 void UPKCharacterMovementComponent::ReceiveMinigunHit(/*FVector &FWD, FVector &RGT*/float DeltaTime)
@@ -1206,7 +1223,6 @@ void UPKCharacterMovementComponent::SlideAlongSlope(float DeltaTime)
 
 void UPKCharacterMovementComponent::OnRep_SlideAlongSlope()
 {
-	
 }
 
 void UPKCharacterMovementComponent::HandleJumpPad(float JumpStrength)

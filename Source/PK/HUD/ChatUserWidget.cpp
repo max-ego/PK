@@ -5,7 +5,6 @@
 #include "Main/Util.h"
 #include "Main/PKPlayerState.h"
 #include "Engine/UserInterfaceSettings.h"
-//#include "GameFramework/HUD.h"
 
 
 UChatUserWidget::UChatUserWidget(const FObjectInitializer& ObjectInitializer)

@@ -13,7 +13,6 @@
 AStake::AStake(const FObjectInitializer& ObjectInitializer)
 : Super(ObjectInitializer)
 {
-
 	// dummy grenade
 	StaticMeshComponentGrenade = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("StaticMeshGrenade"));
 	StaticMeshComponentGrenade->SetCollisionProfileName(UCollisionProfile::NoCollision_ProfileName);
@@ -26,7 +25,6 @@ AStake::AStake(const FObjectInitializer& ObjectInitializer)
 	StaticMeshComponentGrenade->SetStaticMesh(GrenadeMesh.Object);
 	StaticMeshComponentGrenade->SetRelativeLocation(FVector(-20.0f, 0.0f, 0.0f));
 	StaticMeshComponentGrenade->SetRelativeRotation(FRotator(-90.0f, 0.0f, 0.0f));
-	//
 
 	PrimaryActorTick.bCanEverTick = true;
 
@@ -59,17 +57,16 @@ AStake::AStake(const FObjectInitializer& ObjectInitializer)
 	StakeShield = (USoundCue*)StakeShieldCue.Object;
 	static ConstructorHelpers::FObjectFinder<UObject>StakeDefaultCue(TEXT("SoundCue'/Game/Sounds/impacts/Cue/stake-default.stake-default'"));
 	StakeDefault = (USoundCue*)StakeDefaultCue.Object;
-	
+
 	StakeFire = UTIL.GetSound("weapons/stake", "weapon_stake-shoot_mp");
 	static ConstructorHelpers::FObjectFinder<UObject>StakeOnfly(TEXT("SoundCue'/Game/Sounds/weapons/stake/Cue/StakeOnflyLoop.StakeOnflyLoop'"));
 	StakeOnflyLoop = (USoundCue*)StakeOnfly.Object;
 
-	//StakeHitSnd = UTIL.GetSound("weapons/stake", "stake-fire-combo");
 	StakeHitComboSnd = UTIL.GetSound("weapons/grenadelauncher", "weapon_grenade_explosion");
 	StakeFireComboSnd = UTIL.GetSound("weapons/stake", "stake-fire-combo");
 
 	Damage = 200.f;
-	
+
 	TimeToLive = CalcTimeToLive();
 }
 
@@ -102,7 +99,6 @@ void AStake::BeginPlay()
 
 	if (b3rdPerson)
 	{
-		/*UGameplayStatics::PlaySoundAtLocation(this, StakeFire, GetActorLocation());*/
 		if (Owner) UGameplayStatics::PlaySoundAttached(StakeFire, Owner->GetRootComponent());
 	}
 	
@@ -229,10 +225,13 @@ void AStake::Deactivate_Implementation()
 		if (bCombo)
 		{
 			TSubclassOf<AGrenade> ProjectileCls = AGrenade::StaticClass();
-			SpawnParameters.Owner = this;
+			
 			FVector Offset = GetActorRotation().RotateVector(FVector(-200.0f, 0.0f, 0.0f));
-			GrenadeCombo = GetWorld()->SpawnActor<AGrenade>(ProjectileCls, GetActorLocation() + Offset, GetActorRotation(), SpawnParameters);
-			if (!HitResult.bBlockingHit) GrenadeCombo->Deactivate();
+			const FVector SpawnLocation = GetActorLocation() + Offset;
+			const FRotator SpawnRotation = GetActorRotation();
+			
+			if (HitResult.bBlockingHit) SpawnParameters.Owner = this;
+			GrenadeCombo = GetWorld()->SpawnActor<AGrenade>(ProjectileCls, SpawnLocation, SpawnRotation, SpawnParameters);
 		}
 		else if (HitResult.bBlockingHit)
 		{

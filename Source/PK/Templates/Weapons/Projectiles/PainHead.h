@@ -26,6 +26,8 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaSeconds) override;
 
+	void PostInitializeComponents() override;
+
 	/** called when projectile hits something */
 	virtual void OnHit(AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit) override;
 
@@ -71,7 +73,6 @@ protected:
 	}
 
 	ANetPlayer* Owner;
-	/*UParticleSystem* HeadBeam;*/
 	UParticleSystemComponent* HeadBeamComp;
 
 	// sounds

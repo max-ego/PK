@@ -48,9 +48,10 @@ void AGrenade::BeginPlay()
 	}
 	else{
 		Damage = 200.f; // combo damage
-		SetDeactivateTimer(0);
+		if (!GetOwner()) SetDeactivateTimer(0.016);
+		else SetDeactivateTimer(0);
 		FVector FV = GetActorRotation().RotateVector(FVector::ForwardVector);
-		GetProjectileMovement()->Velocity = FV * 1500.f/*DefaultProjectileSpeed*/;
+		GetProjectileMovement()->Velocity = FV * 1500.f;
 	}
 }
 
@@ -75,8 +76,6 @@ void AGrenade::OnHit(AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector
 	}
 	else{
 		if (GetOwner() && GetOwner()->IsA(ACharacter::StaticClass())) bHitOwner = true; // hit everyone after bounce
-
-		if (HasAuthority() && (GetProjectileMovement()->Velocity.IsNearlyZero() || MaxBounces <= 0)) Deactivate();
 
 		if (BounceSoundTimeOut <= 0){
 			UGameplayStatics::PlaySoundAtLocation(this, grenade_bounce, GetActorLocation());

@@ -4,7 +4,6 @@
 #include "PainKiller.h"
 #include "Main/NetPlayer.h"
 #include "Components/PoseableMeshComponent.h"
-//#include "Engine/EngineTypes.h"
 
 
 APainKiller::APainKiller(const FObjectInitializer& ObjectInitializer)

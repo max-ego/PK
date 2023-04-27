@@ -4,7 +4,7 @@
 #include "Rocket.h"
 #include "Main/Util.h"
 #include "PKClasses/Explosion.h"
-//#include "PKClasses/DamageTypes/RocketDamage.h"
+#include "UnrealNetwork.h"
 
 float ARocket::ExplosionRange = 600.f;
 
@@ -12,7 +12,7 @@ float ARocket::ExplosionRange = 600.f;
 ARocket::ARocket(const FObjectInitializer& ObjectInitializer)
 : Super(ObjectInitializer)
 {
-	PrimaryActorTick.bCanEverTick = false;
+ 	PrimaryActorTick.bCanEverTick = false;
 
 	bReplicateMovement = false;
 	
@@ -23,7 +23,7 @@ ARocket::ARocket(const FObjectInitializer& ObjectInitializer)
 	GetStaticMeshComp()->SetRelativeLocation(FVector(-20.0f, 0.0f, 0.0f));
 	GetStaticMeshComp()->SetRelativeRotation(FRotator(-90.0f, 0.0f, 0.0f));
 	
-	DefaultProjectileSpeed = /*3360*/4200.f;
+	DefaultProjectileSpeed = 4200.f; /*3360*/
 	GetProjectileMovement()->InitialSpeed = DefaultProjectileSpeed;
 	GetProjectileMovement()->MaxSpeed = DefaultProjectileSpeed;
 	
@@ -102,42 +102,22 @@ void ARocket::OnBeginOverlap(AActor* OtherActor, UPrimitiveComponent* OtherComp,
 
 void ARocket::Deactivate_Implementation()
 {
+	if (!bIsActive) return;
 	Super::Deactivate_Implementation();
 
 	AudioComponent->Stop();
 
-	FRotator SpawnRotation = FVector(0, 0, 1).Rotation();
-	if (HitResult.bBlockingHit || HitResult.bStartPenetrating) {
-		SpawnRotation = HitResult.ImpactNormal.Rotation();
-	}
-	
-	FActorSpawnParameters SpawnParameters = FActorSpawnParameters();
-	SpawnParameters.Instigator = Instigator;
-	SpawnParameters.Owner = this;
-
-	GetWorld()->SpawnActor<AExplosion>(AExplosion::StaticClass(), GetActorLocation(), SpawnRotation, SpawnParameters);
-	UGameplayStatics::PlaySoundAtLocation(this, ExplosionSnd, GetActorLocation());
-
-	/*if (HasAuthority()) ApplyDamage();*/ // !!!!!!!!!!!!!! moved to 'AExplosion'
-
-	if (IsRunningDedicatedServer() || !(GetOwner() && GetOwner()->IsValidLowLevel() && !GetOwner()->IsPendingKill())) return;
-
-	/*apply explosion impulse*/
-	UPKGameInstance* GI = Cast<UPKGameInstance>(GetWorld()->GetGameInstance());
-	
-	ANetPlayer* player = Cast<ANetPlayer>(GI->GetFirstLocalPlayerController()->AcknowledgedPawn);	
-
-	if (player && (player != GetOwner() || RocketType == ERocketType::grenade))
-	{
-		/*check for obstacles between*/
-		FCollisionQueryParams TraceParams = FCollisionQueryParams(FName(TEXT("Trace")), true, this);
-		bool bBlockingHit = GetWorld()->LineTraceTestByProfile(GetActorLocation(), player->GetActorLocation(), TEXT("Spectator"), TraceParams);
-		
-		if (!bBlockingHit)
-		{
-			UPKCharacterMovementComponent* CharacterMovement = Cast<UPKCharacterMovementComponent>(player->GetCharacterMovement());
-			CharacterMovement->ReceiveImpact(ARocket::GetExplosionVelocity(GetActorLocation(), CharacterMovement));
+	if (HasAuthority()) {
+		FVector_NetQuantize10 Loc = GetActorLocation();
+		FVector_NetQuantize10 Rot = RocketType == ERocketType::rocket ? GetActorRotation().Vector() : FVector(0, 0, 1);
+		bool bHitMovable = false;
+		if (HitResult.Actor != NULL && HitResult.Actor != this) {
+			Loc = HitResult.ImpactPoint;
+			Rot = HitResult.ImpactNormal;
 		}
+		FVector_NetQuantize10 locrot[] = { Loc, Rot };
+		ExplosionLocRot.Append(locrot, ARRAY_COUNT(locrot));
+		OnRep_ExplosionLoc();
 	}
 }
 
@@ -166,7 +146,6 @@ FVector ARocket::GetExplosionVelocity(FVector ExplosionLoc, UMovementComponent* 
 {
 	float ExplosionStrength = 550.f;
 	float JumpZVelocity = 0.f;
-	float MaxSpeed = ActorMovementComp->Velocity.Size();
 	FVector Vel = FVector::ZeroVector;
 
 	float dist = (ExplosionLoc - ActorMovementComp->UpdatedComponent->GetComponentLocation()).Size();
@@ -180,15 +159,53 @@ FVector ARocket::GetExplosionVelocity(FVector ExplosionLoc, UMovementComponent* 
 		UPKCharacterMovementComponent* CharacterMovement = Cast<UPKCharacterMovementComponent>(ActorMovementComp);
 		if (CharacterMovement->IsFalling()) ImpactRatio *= 1.2f;
 		JumpZVelocity = CharacterMovement->JumpZVelocity;
-		MaxSpeed = CharacterMovement->GetMaxSpeed();
 	}
 
 	float VelZ = JumpZVelocity;
 	/*eliminate negative vertical velocity*/
-	if (ActorMovementComp->Velocity.Z < 0) VelZ -= ActorMovementComp->Velocity.Z;
+	if (ActorMovementComp->Velocity.Z < 0) VelZ -= ActorMovementComp->Velocity.Z;	
 	
 	Vel = (ActorMovementComp->Velocity.GetSafeNormal2D() + ExplosionToActor).GetSafeNormal() * ExplosionStrength * ImpactRatio;
 	Vel.Z += VelZ * ImpactRatio;
 
 	return Vel;
+}
+
+void ARocket::OnRep_ExplosionLoc()
+{
+	FVector SpawnLocation = ExplosionLocRot[0];
+	FRotator SpawnRotation = ExplosionLocRot[1].Rotation();
+
+	FActorSpawnParameters SpawnParameters = FActorSpawnParameters();
+	SpawnParameters.Instigator = Instigator;
+	SpawnParameters.Owner = this;
+
+	GetWorld()->SpawnActor<AExplosion>(AExplosion::StaticClass(), SpawnLocation, SpawnRotation, SpawnParameters);
+	UGameplayStatics::PlaySoundAtLocation(this, ExplosionSnd, SpawnLocation);
+
+	if (IsRunningDedicatedServer() || !(GetOwner() && GetOwner()->IsValidLowLevel() && !GetOwner()->IsPendingKill())) return;
+
+	/*apply explosion impulse*/
+	UPKGameInstance* GI = Cast<UPKGameInstance>(GetWorld()->GetGameInstance());
+	ANetPlayer* player = Cast<ANetPlayer>(GI->GetFirstLocalPlayerController()->AcknowledgedPawn);
+
+	if (player && (player != GetOwner() || RocketType == ERocketType::grenade))
+	{
+		/*check for obstacles*/
+		FCollisionQueryParams TraceParams = FCollisionQueryParams(FName(TEXT("Trace")), true, this);
+		bool bBlockingHit = GetWorld()->LineTraceTestByProfile(GetActorLocation(), player->GetActorLocation(), TEXT("Spectator"), TraceParams);
+
+		if (!bBlockingHit)
+		{
+			UPKCharacterMovementComponent* CharacterMovement = Cast<UPKCharacterMovementComponent>(player->GetCharacterMovement());
+			CharacterMovement->ReceiveImpact(ARocket::GetExplosionVelocity(SpawnLocation, CharacterMovement));
+		}
+	}
+}
+
+void ARocket::GetLifetimeReplicatedProps(TArray<FLifetimeProperty> & OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ARocket, ExplosionLocRot);
 }

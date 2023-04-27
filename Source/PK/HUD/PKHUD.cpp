@@ -12,9 +12,6 @@
 #include "Main/PKPlayerState.h"
 #include "Engine/UserInterfaceSettings.h"
 #include "RenderCore.h" /*GWhiteTexture*/
-//#include "Runtime/Engine/Public/EngineStats.h"
-//#include "Engine/NetDriver.h"
-//#include "MaterialShared.h"
 #include "Materials/MaterialInterface.h"
 
 UENUM()

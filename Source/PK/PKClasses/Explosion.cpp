@@ -6,14 +6,12 @@
 #include "PKClasses/DamageTypes/ExplosionDamage.h"
 #include "Templates/Weapons/Projectiles/Rocket.h"
 #include "PKClasses/DestructibleItemBase.h"
-//#include "Runtime/Engine/Classes/Kismet/KismetMathLibrary.h"
 
 
 // Sets default values
 AExplosion::AExplosion(const FObjectInitializer& ObjectInitializer)
 : Super(ObjectInitializer)
 {
-	// Set the root component to ensure that GetActorLocation returns valid data
 	Scene = CreateDefaultSubobject<USceneComponent>(TEXT("Scene"));
 	RootComponent = Scene;
 
@@ -29,6 +27,7 @@ AExplosion::AExplosion(const FObjectInitializer& ObjectInitializer)
 	DamageType = UExplosionDamage::StaticClass();
 
 	ExplosionRange = ARocket::ExplosionRange/*600.f*/;
+
 }
 
 // Called when the game starts or when spawned
@@ -64,13 +63,10 @@ void AExplosion::DoExplosion()
 	UWorld* const World = GetWorld();
 	if (World != NULL)
 	{
-		/*ARadialForceActor* RadialForceActor = World->SpawnActor<ARadialForceActor>(ARadialForceActor::StaticClass(), GetActorLocation(), GetActorRotation(), FActorSpawnParameters());*/
 		ARadialForceActor* RadialForceActor = World->SpawnActorDeferred<ARadialForceActor>(ARadialForceActor::StaticClass(), GetActorLocation(), GetActorRotation());
 		
 		URadialForceComponent* RadialForceComp = RadialForceActor->GetForceComponent();
 		RadialForceComp->RemoveObjectTypeToAffect(UEngineTypes::ConvertToObjectType(ECC_Pawn));
-
-		// defaults		
 
 		RadialForceComp->AddObjectTypeToAffect(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_WorldDynamic));
 		RadialForceComp->DestructibleDamage = 100.f;

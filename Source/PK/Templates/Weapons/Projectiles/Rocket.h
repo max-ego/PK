@@ -5,8 +5,6 @@
 #include "GameFramework/Actor.h"
 #include "Main/NetPlayer.h"
 #include "PKClasses/PKProjectile.h"
-//#include "ParticleDefinitions.h"
-//#include "Components/BillboardComponent.h"
 #include "Rocket.generated.h"
 
 UENUM()
@@ -41,7 +39,14 @@ public:
 	static float ExplosionRange;
 	static FVector GetExplosionVelocity(FVector ExplosionLoc, UMovementComponent* ActorMovementComp);
 
+	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty> & OutLifetimeProps) const override;
+
 protected:
+
+	UPROPERTY(ReplicatedUsing = OnRep_ExplosionLoc)
+	TArray<FVector_NetQuantize10> ExplosionLocRot = {};
+	UFUNCTION()
+	void OnRep_ExplosionLoc();
 
 	uint8 RocketType = ERocketType::rocket;
 
