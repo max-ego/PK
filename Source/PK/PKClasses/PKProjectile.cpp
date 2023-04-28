@@ -66,6 +66,20 @@ APKProjectile::APKProjectile(const FObjectInitializer& ObjectInitializer)
 	SpecificDamageType = UPKDamageType::StaticClass();
 }
 
+void APKProjectile::GatherCurrentMovement()
+{
+	Super::GatherCurrentMovement();
+
+	ReplicatedMovement.LinearVelocity = GetProjectileMovement()->Velocity;
+}
+
+void APKProjectile::OnRep_ReplicatedMovement()
+{
+	Super::OnRep_ReplicatedMovement();
+
+	GetProjectileMovement()->Velocity = ReplicatedMovement.LinearVelocity;
+}
+
 void APKProjectile::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();

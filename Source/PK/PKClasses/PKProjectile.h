@@ -65,6 +65,9 @@ public:
 	// Called every frame
 	virtual void Tick( float DeltaSeconds ) override;
 
+	virtual void GatherCurrentMovement() override;
+	virtual void OnRep_ReplicatedMovement() override;
+
 	void PostInitializeComponents() override;
 
 	/** Returns CollisionComp subobject **/
@@ -94,7 +97,7 @@ public:
 
 	bool bIsActive = true;
 	
-	// add some velocity from player
+	// Used to add some velocity from player
 	UPROPERTY(ReplicatedUsing = OnRep_AddVelocity)
 	FVector_NetQuantize10 AddVelocity = FVector::ZeroVector;
 	UFUNCTION()

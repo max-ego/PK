@@ -36,6 +36,13 @@ public:
 	void DeactivateQuiet();
 	virtual void DeactivateQuiet_Implementation();
 
+	UPROPERTY(ReplicatedUsing = OnRep_BounceSnd)
+	uint32 bBounceSnd:1;
+	UFUNCTION()
+	virtual void OnRep_BounceSnd();
+
+	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty> & OutLifetimeProps) const override;
+
 protected:
 
 	float BounceSoundTimeOut = -1;

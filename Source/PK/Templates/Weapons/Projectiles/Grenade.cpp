@@ -12,7 +12,7 @@ AGrenade::AGrenade(const FObjectInitializer& ObjectInitializer)
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	bReplicateMovement = false;
+	bReplicateMovement = true;
 
 	DefaultProjectileSpeed = 2000.f;
 	GetProjectileMovement()->InitialSpeed = 0;
@@ -63,8 +63,15 @@ void AGrenade::Tick(float DeltaTime)
 	if (BounceSoundTimeOut > 0) BounceSoundTimeOut -= DeltaTime;
 }
 
+void AGrenade::OnRep_BounceSnd()
+{
+	UGameplayStatics::PlaySoundAtLocation(this, grenade_bounce, GetActorLocation());
+}
+
 void AGrenade::OnHit(AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
-{		
+{
+	if (!HasAuthority()) return;
+	
 	if (OtherActor && OtherActor->IsA(AStake::StaticClass()))
 	{
 		OtherActor = NULL;
@@ -78,6 +85,7 @@ void AGrenade::OnHit(AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector
 		if (GetOwner() && GetOwner()->IsA(ACharacter::StaticClass())) bHitOwner = true; // hit everyone after bounce
 
 		if (BounceSoundTimeOut <= 0){
+			bBounceSnd++; // notify client of the bounce
 			UGameplayStatics::PlaySoundAtLocation(this, grenade_bounce, GetActorLocation());
 			BounceSoundTimeOut = 0.2f;
 		}
@@ -86,6 +94,8 @@ void AGrenade::OnHit(AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector
 
 void AGrenade::OnBeginOverlap(AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool fromSweep, const FHitResult& Hit)
 {
+	if (!HasAuthority()) return;
+	
 	if (OtherActor && OtherActor->IsA(AStake::StaticClass()))
 	{
 		OtherActor = NULL;
@@ -120,4 +130,11 @@ bool AGrenade::IsSpawnedBehindWall()
 	}
 
 	return false;
+}
+
+void AGrenade::GetLifetimeReplicatedProps(TArray<FLifetimeProperty> & OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AGrenade, bBounceSnd);
 }

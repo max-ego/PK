@@ -163,6 +163,20 @@ void ASoulMP::Tick( float DeltaTime )
 
 }
 
+void ASoulMP::GatherCurrentMovement()
+{
+	Super::GatherCurrentMovement();
+
+	ReplicatedMovement.LinearVelocity = GetProjectileMovement()->Velocity;
+}
+
+void ASoulMP::OnRep_ReplicatedMovement()
+{
+	Super::OnRep_ReplicatedMovement();
+
+	GetProjectileMovement()->Velocity = ReplicatedMovement.LinearVelocity;
+}
+
 void ASoulMP::SpawnParticles()
 {
 	/*root = UGameplayStatics::SpawnEmitterAttached(energyhealth1, GetSkeletalMeshComp(), FName("root"));*/

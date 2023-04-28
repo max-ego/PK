@@ -365,7 +365,9 @@ bool UPKCharacterMovementComponent::StepUp(const FVector& InGravDir, const FVect
 		if (DeltaZ > MaxStepHeight)
 		{
 			ScopedStepUpMovement.RevertMove(); // Revert anyway, whether true or false is returned.
-			if (DeltaZ < JumpOverHeight && IsWalkable(Hit) && !Acceleration.IsZero() && !bSlideAlongSlope && (bSpeedBit10 || bSpeedBit01)){
+			if (DeltaZ < JumpOverHeight && IsWalkable(Hit) && !Acceleration.IsZero() && !bSlideAlongSlope && (bSpeedBit10 || bSpeedBit01))
+			{
+				SafeMoveUpdatedComponent(FVector(0, 0, DeltaZ/3), PawnRotation, true, Hit);
 				Velocity = FVector::ZeroVector;
 				Velocity.Z = FMath::Sqrt(-GetGravityZ() * DeltaZ * 2.f) * (1.f + (bSpeedBit10 << 1 | bSpeedBit01 << 0) * 0.33f);
 				if (CharacterOwner->IsLocallyControlled())

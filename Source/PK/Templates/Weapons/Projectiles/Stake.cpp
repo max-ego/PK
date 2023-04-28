@@ -29,7 +29,6 @@ AStake::AStake(const FObjectInitializer& ObjectInitializer)
 	PrimaryActorTick.bCanEverTick = true;
 
 	bReplicateMovement = true;
-	NetUpdateFrequency = 45.f;
 
 	GetCollisionComp()->InitSphereRadius(111.0f);
 	GetCollisionComp()->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
