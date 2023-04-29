@@ -99,7 +99,7 @@ public:
 	
 	// Used to add some velocity from player
 	UPROPERTY(ReplicatedUsing = OnRep_AddVelocity)
-	FVector_NetQuantize10 AddVelocity = FVector::ZeroVector;
+	FVector_NetQuantize100 AddVelocity = FVector::ZeroVector;
 	UFUNCTION()
 	virtual void OnRep_AddVelocity();
 
