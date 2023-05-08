@@ -16,6 +16,6 @@ Packaged version (408 MB)
 ---
 [WindowsNoEditor_a1.25.7z](https://github.com/max-ego/PK/releases/download/a1.25/WindowsNoEditor_a1.25.7z "WindowsNoEditor_a1.25.7z") (28 April 2023)
 
-[![youtube](misc/mq2.webp "youtube")](https://youtu.be/xCp7tg72glU "youtube")
+<iframe width="480" height="270" src="https://www.youtube.com/embed/xCp7tg72glU"></iframe>
 
 ------------
