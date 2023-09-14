@@ -1,0 +1,16 @@
+{
+	"FileVersion": 3,
+	"EngineAssociation": "{DF6EF548-4BF8-B0BB-8B7B-9D8A7AF4248F}",
+	"Category": "",
+	"Description": "",
+	"Modules": [
+		{
+			"Name": "PK",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	],
+	"TargetPlatforms": [
+		"WindowsNoEditor"
+	]
+}
