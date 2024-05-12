@@ -12,9 +12,9 @@ How to build the project:
 - Build PK.sln
 
 ------------
-Packaged version (408 MB)
+Packaged version (v0.11b 406 MB)
 ---
-[WindowsNoEditor_a1.25.7z](https://github.com/max-ego/PK/releases/download/a1.25/WindowsNoEditor_a1.25.7z "WindowsNoEditor_a1.25.7z") (28 April 2023)
+[WindowsNoEditor_v0.11b.7z](https://drive.google.com/file/d/1ZHGp3jIxbyQaGXauUNQTr0YgoxkNzOQq/view?usp=sharing "WindowsNoEditor_v0.11b.7z") (May 11, 2024)
 
 [![youtube](misc/mq2.webp "youtube")](https://youtu.be/xCp7tg72glU "youtube")
 
