@@ -287,7 +287,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Menu")
 	void OnDisconnect();
 
-	bool InterruptionConnection();
+	bool CancelConnection();
 		
 	void OnSearchResultsCompleted();
 	

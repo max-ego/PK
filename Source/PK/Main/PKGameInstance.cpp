@@ -804,7 +804,7 @@ void UPKGameInstance::CenterCursor()
 	GEngine->GameViewport->Viewport->SetMouse(ViewportCenter.X, ViewportCenter.Y);
 }
 
-bool UPKGameInstance::InterruptionConnection()
+bool UPKGameInstance::CancelConnection()
 {
 	if (WorldContext->PendingNetGame)
 	{

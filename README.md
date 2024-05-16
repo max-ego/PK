@@ -14,7 +14,7 @@ How to build the project:
 ------------
 Packaged version (v0.12b 406 MB)
 ---
-[WindowsNoEditor_v0.12b.7z](https://drive.google.com/file/d/1uP94FUpcKruk6IuNLreL9edCan2RdjkN/view?usp=sharing "WindowsNoEditor_v0.12b.7z") (May 13, 2024)
+[WindowsNoEditor_v0.13b.7z](https://drive.google.com/file/d/1oDkkTrsdYKW9haRmHxqKF-3xoBK6zssy/view?usp=sharing "WindowsNoEditor_v0.13b.7z") (May 16, 2024)
 
 [![youtube](misc/mq2.webp "youtube")](https://youtu.be/xCp7tg72glU "youtube")
 

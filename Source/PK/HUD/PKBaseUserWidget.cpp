@@ -65,7 +65,7 @@ FEventReply UPKBaseUserWidget::OnKeyDown_Implementation(FGeometry MyGeometry, FK
 			UPKGameInstance* GI = Cast<UPKGameInstance>(World->GetGameInstance());
 			APlayerController* PC = GI->GetFirstLocalPlayerController();
 
-			if (!GI->InterruptionConnection())
+			if (!GI->CancelConnection())
 			{
 				if (!PC->AcknowledgedPawn)
 				{
