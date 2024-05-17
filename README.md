@@ -12,7 +12,7 @@ How to build the project:
 - Build PK.sln
 
 ------------
-Packaged version (v0.12b 406 MB)
+Packaged version (v0.13b 406 MB)
 ---
 [WindowsNoEditor_v0.13b.7z](https://drive.google.com/file/d/1oDkkTrsdYKW9haRmHxqKF-3xoBK6zssy/view?usp=sharing "WindowsNoEditor_v0.13b.7z") (May 16, 2024)
 
