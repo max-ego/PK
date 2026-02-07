@@ -16,7 +16,7 @@ Packaged versions (v0.16b Jun 19, 2024)
 ---
 [Windows x86](https://drive.google.com/file/d/1gNeDoKvPrTFfcafWX817jNiuUvZgb7Dd/view?usp=sharing "WindowsNoEditor_v0.16b.7z") (406 MB)
 
-[Linux amd64](https://drive.google.com/file/d/12RO3HEa-BU4HvnDp-9dxXy6feyoCL93n/view?usp=sharing "LinuxNoEditor_v0.16b.tar.gz") (605 MB)
+[Linux amd64](https://drive.google.com/file/d/1Dogibh4nOMz1N0XLBsdzjPsL2voHRXcL/view?usp=sharing "LinuxNoEditor_v0.16b.tar.gz") (605 MB)
 
 <!---
 [![youtube](misc/mq2.webp "youtube")](https://youtu.be/xCp7tg72glU "youtube")
